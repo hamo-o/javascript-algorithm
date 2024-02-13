@@ -8,8 +8,7 @@ const calendar = input.slice(1);
 const findDate = (m, n, x, y) => {
   let k = x;
   while (k <= m * n) {
-    const dy = k < y ? k : k - y;
-    if (!(dy % n)) {
+    if ((k - x) % m === 0 && (k - y) % n === 0) {
       return k;
     }
     k += m;
