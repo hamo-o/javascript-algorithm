@@ -1,42 +1,51 @@
 const fs = require('fs');
 const filePath = process.platform === 'linux' ? '/dev/stdin' : './input.txt';
 const input = fs.readFileSync(filePath).toString().trim().split('\n');
-const n = +input[0];
-const board = input.slice(1).map((line) => line.split(' ').map(Number));
+const t = +input[0];
 
-// [x][y][방향] = 경우의수
-// 0 가로
-// 1 대각선
-// 2 세로
-// 기준은 파이프의 끝
-const memo = new Array(n)
-  .fill(0)
-  .map(() => new Array(n).fill(0).map(() => new Array(3).fill(0)));
+let lines = 0;
+for (let i = 0; i < t; i++) {
+  const [n, k] = input[lines + 1].split(' ').map(Number);
+  const times = input[lines + 2].split(' ').map(Number);
+  const build = input
+    .slice(lines + 3, lines + 3 + k)
+    .map((line) => line.split(' ').map(Number));
+  const w = +input[lines + k + 3];
 
-memo[0][1][0] = 1;
-for (let i = 0; i < n; i++) {
-  for (let j = 1; j < n; j++) {
-    // 놓일 칸이 비어있는지 확인
-    if (!board[i][j]) {
-      // 가로인 경우, 왼쪽 칸 (가로) (대각선)
-      memo[i][j][0] += memo[i][j - 1][0] + memo[i][j - 1][1];
+  const graph = new Array(n + 1).fill(0).map(() => []);
+  const deg = new Array(n + 1).fill(0);
+  build.forEach(([s, e]) => {
+    graph[s].push(e);
+    deg[e]++;
+  });
 
-      if (i - 1 >= 0) {
-        // 세로인 경우, 위쪽 칸(세로) (대각선)
-        memo[i][j][2] += memo[i - 1][j][2] + memo[i - 1][j][1];
-      }
-    }
+  const memo = top_sort(n, graph, deg, times);
+  console.log(memo[w]);
 
-    // 놓일 칸이 비어있는지 확인
-    if (i - 1 >= 0 && !board[i][j] && !board[i][j - 1] && !board[i - 1][j]) {
-      // 대각선인 경우, 왼쪽 위 대각선(가로) (세로) (대각선)
-      memo[i][j][1] +=
-        memo[i - 1][j - 1][0] + memo[i - 1][j - 1][1] + memo[i - 1][j - 1][2];
-    }
-  }
+  lines += k + 3;
 }
 
-const answer = memo[n - 1][n - 1].reduce((acc, cur) => {
-  return acc + cur;
-}, 0);
-console.log(answer);
+function top_sort(n, graph, deg, times) {
+  const queue = [];
+  const memo = new Array(n + 1).fill(0);
+  for (let i = 1; i <= n; i++) {
+    if (!deg[i]) {
+      memo[i] = times[i - 1];
+      queue.push(i);
+    }
+  }
+
+  let front = 0;
+  while (front < queue.length) {
+    const cur = queue[front];
+    front++;
+
+    for (const next of graph[cur]) {
+      memo[next] = Math.max(memo[next], memo[cur] + times[next - 1]);
+      deg[next]--;
+      if (!deg[next]) queue.push(next);
+    }
+  }
+
+  return memo;
+}
